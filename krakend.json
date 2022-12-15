@@ -14,7 +14,7 @@
       "output_encoding": "json",
       "backend": [
         {
-          "url_pattern": "/book/{id}",
+          "url_pattern": "/book/find/{id}",
           "encoding": "json",
           "sd": "static",
           "method": "GET",
@@ -24,7 +24,7 @@
           ]
         },
         {
-          "url_pattern": "/author/{resp0_authorId}",
+          "url_pattern": "/author/find/{resp0_authorId}",
           "encoding": "json",
           "sd": "static",
           "method": "GET",
@@ -44,9 +44,16 @@
       "endpoint": "/kraken/book/",
       "method": "POST",
       "output_encoding": "json",
+	"extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:8484/auth/realms/master/protocol/openid-connect/certs",
+          "disable_jwk_security": true
+        }
+      },
       "backend": [
         {
-          "url_pattern": "/book/",
+          "url_pattern": "/book/add/",
           "encoding": "json",
           "sd": "static",
           "method": "POST",
@@ -65,9 +72,16 @@
       "endpoint": "/kraken/author/",
       "method": "POST",
       "output_encoding": "json",
+	"extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "http://host.docker.internal:8484/auth/realms/master/protocol/openid-connect/certs",
+          "disable_jwk_security": true
+        }
+      },
       "backend": [
         {
-          "url_pattern": "/author/",
+          "url_pattern": "/author/add/",
           "encoding": "json",
           "sd": "static",
           "method": "POST",
@@ -89,7 +103,7 @@
       "output_encoding": "json",
       "backend": [
         {
-          "url_pattern": "/book/{id}",
+          "url_pattern": "/book/find/{id}",
           "encoding": "json",
           "sd": "static",
           "method": "GET",
@@ -106,7 +120,7 @@
       "output_encoding": "json",
       "backend": [
         {
-          "url_pattern": "/author/{id}",
+          "url_pattern": "/author/find/{id}",
           "encoding": "json",
           "sd": "static",
           "method": "GET",
@@ -116,7 +130,55 @@
           "disable_host_sanitize": false
         }
       ]
+    },
+    {
+      "endpoint": "/kraken/auth/",
+      "method": "POST",
+      "output_encoding": "json",
+      "backend": [
+        {
+          "url_pattern": "/auth/realms/master/protocol/openid-connect/token",
+          "encoding": "json",
+          "sd": "static",
+          "method": "POST",
+          "host": [
+            "http://host.docker.internal:8484"
+          ],
+          "disable_host_sanitize": false
+        }
+      ]
     }
-
-  ]
+  ],
+  "extra_config":{
+    "telemetry/metrics": {
+      "collection_time": "30s",
+      "listen_address": ":8090"
+    },
+    "telemetry/influx": {
+      "address": "http://host.docker.internal:8086",
+      "ttl": "25s",
+      "buffer_size": 100,
+      "username": "kraken",
+      "password": "pass"
+    },
+    "telemetry/opencensus": {
+      "sample_rate": 100,
+      "reporting_period": 0,
+      "exporters": {
+        "prometheus": {
+          "port": 8091,
+          "namespace": "krakend",
+          "tag_host": false,
+          "tag_path": true,
+          "tag_method": true,
+          "tag_statuscode": false
+        },
+        "jaeger": {
+          "endpoint": "http://host.docker.internal:14268/api/traces",
+          "service_name":"krakend",
+          "buffer_max_count": 1000
+        }
+      }
+    }
+  }
 }

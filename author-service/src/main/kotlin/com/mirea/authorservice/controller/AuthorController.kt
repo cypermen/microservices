@@ -15,7 +15,7 @@ class AuthorController(
 
 ) {
 
-    @PostMapping("/")
+    @PostMapping("/add/")
     fun saveAuthor(@RequestParam name: String, surname: String, country: String): Author {
         return authorService.saveAuthor(
             Author(
@@ -27,8 +27,12 @@ class AuthorController(
         )
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/find/{id}")
     fun findAuthorById(@PathVariable("id") authorId: String): Author? {
         return authorService.findAuthorById(UUID.fromString(authorId))
+    }
+    @GetMapping ("/__health/")
+    fun  checkHealth():Boolean{
+        return true
     }
 }

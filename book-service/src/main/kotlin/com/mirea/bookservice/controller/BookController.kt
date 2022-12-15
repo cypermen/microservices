@@ -12,7 +12,7 @@ class BookController(
 
 ) {
 
-    @PostMapping("/")
+    @PostMapping("/add/")
     fun saveBook(@RequestParam title: String, @RequestParam authorId: String): Book {
         return bookService.saveBook(
             Book(
@@ -23,7 +23,12 @@ class BookController(
         )
     }
 
-    @GetMapping("/{id}")
+    @GetMapping ("/__health/")
+    fun  checkHealth():Boolean{
+        return true
+    }
+
+    @GetMapping("/find/{id}")
     fun getBookById(@PathVariable("id") bookId: String): Book? {
         return bookService.getBook(UUID.fromString(bookId))
     }

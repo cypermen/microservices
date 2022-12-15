@@ -46,6 +46,12 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/book/__health/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
     depends_on:
       book-db:
         condition: service_healthy
@@ -63,6 +69,11 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/author/__health/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       author-db:
         condition: service_healthy
@@ -94,20 +105,79 @@ services:
     image: jaegertracing/all-in-one:latest
     ports:
       - 6831:6831/udp
-      - 6832:6832/udp
       - 16686:16686
-      - 16685:16685
       - 14268:14268
-      - 5775:5775/udp
-      - 5778:5778
-      - 14250:14250
-      - 9411:9411
     depends_on:
-      book-service:
-        condition: service_started
-      author-service:
+      krakend_ce:
         condition: service_started
     links:
-      - book-service
-      - author-service
+      - krakend_ce
+  influxdb:
+    image: influxdb:1.8.10
+    environment:
+      - "INFLUXDB_DB=krakend"
+      - "INFLUXDB_USER=kraken"
+      - "INFLUXDB_USER_PASSWORD=pass"
+      - "INFLUXDB_ADMIN_USER=admin"
+      - "INFLUXDB_ADMIN_PASSWORD=admin"
+    ports:
+      - "8086:8086"
+  grafana:
+    build: './config/grafana'
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      monitoring:
+        aliases:
+          - grafana
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus:/prometheus
+    networks:
+      monitoring:
+        aliases:
+          - prometheus
 
+  keycloak-db:
+    image: 'postgres:latest'
+    container_name: keycloak-db
+    ports:
+      - 5435:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=keycloak
+    networks:
+      - local-keycloak
+
+  keycloak:
+    depends_on:
+      - keycloak-db
+    container_name: local_keycloak
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: keycloak-db
+      DB_DATABASE: keycloak
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      KEYCLOAK_USER: admin1
+      KEYCLOAK_PASSWORD: admin1
+    image: jboss/keycloak
+    ports:
+      - "8484:8080"
+    networks:
+      - local-keycloak
+
+
+networks:
+  monitoring:
+  local-keycloak:
